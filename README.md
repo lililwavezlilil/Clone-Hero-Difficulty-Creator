@@ -1,4 +1,4 @@
-<img width="256" height="256" alt="Clone Hero Difficulty Creator Icon 2" src="https://github.com/user-attachments/assets/bb8bf2f2-f791-41d4-9761-5a77700b8be2" />**Clone Hero Difficulty Creator**<img width="256" height="256" alt="Clone Hero Difficulty Creator Icon 2" src="https://github.com/user-attachments/assets/6cd62d8b-ed05-45f4-898a-3c533ac71643" />
+**Clone Hero Difficulty Creator**
 
 Clone Hero Difficulty Creator will automatically create missing difficulties from Expert only charts for your entire Clone Hero songs directory
 
@@ -44,3 +44,4 @@ https://github.com/lililwavezlilil
 
 <img width="3840" height="2160" alt="Screenshot (377)" src="https://github.com/user-attachments/assets/c2a8ec71-bbab-48b7-bdb8-5b203f1c56f1" />
 <img width="3840" height="2160" alt="Screenshot (378)" src="https://github.com/user-attachments/assets/16ab534d-f1f9-4543-b084-539361084599" />
+<img width="256" height="256" alt="Clone Hero Difficulty Creator Icon 2" src="https://github.com/user-attachments/assets/96b6c8c1-eda7-45e2-926b-6476588f8b51" />
