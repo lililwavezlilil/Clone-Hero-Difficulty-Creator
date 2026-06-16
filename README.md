@@ -4,7 +4,7 @@ Clone Hero Difficulty Creator will automatically create missing difficulties fro
 
 **PLEASE ALWAYS USE Clone Hero Midi 2 Chart.exe FIRST!!!**
 
-*Clone Hero Difficulty Creator ONLY works for notes.chart files* 
+**Clone Hero Difficulty Creator ONLY works for notes.chart files**
 
 ***⚠️ Security Notice:*** *Antivirus False Positives*
 
