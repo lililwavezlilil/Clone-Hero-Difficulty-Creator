@@ -1,6 +1,6 @@
 **Clone Hero Difficulty Creator**
 
-Clone Hero Difficulty Creator will automatically create missing difficulties from Expert only charts for your entire Clone Hero songs directory.
+Clone Hero Difficulty Creator will automatically create missing difficulties from Expert only charts for your entire Clone Hero songs directory
 
 **PLEASE ALWAYS USE Clone Hero Midi 2 Chart.exe FIRST!!!**
 
