@@ -32,12 +32,12 @@ https://github.com/lililwavezlilil
 
 **Features & Functionality:**
 
-• Searches through your Clone Hero songs folder/directory for any songs (notes.chart) file missing any charted difficulties other than Expert (Easy, Medium, Hard) and charts them
+• Searches through your Clone Hero songs folder/directory for any songs *(notes.chart)* file missing any charted difficulties other than Expert *(Easy, Medium, Hard)* and charts them
 
-• Uses the Expert chart to accurately chart the lower difficulties with proper spacing and note placement while retaining accurate note types (Normal, Taps, HOPOS, Forced, etc.)
+• Uses the Expert chart to accurately chart the lower difficulties with proper spacing and note placement while retaining accurate note types *(Normal, Taps, HOPOS, Forced, etc.)*
 
 • Copies the Star Power exact position(s) as the Expert chart to the lower difficulties
 
-• DOES NOT overwrite any difficulty that already has already been charted
+• **DOES NOT** overwrite any difficulty that already has already been charted
 
 • Creates a notes.chart.bak file in the same folder for each notes.chart file that receives a missing difficulty or difficulties
