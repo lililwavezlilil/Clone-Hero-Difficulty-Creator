@@ -1,4 +1,4 @@
-**Clone Hero Difficulty Creator**
+<img width="256" height="256" alt="Clone Hero Difficulty Creator Icon 2" src="https://github.com/user-attachments/assets/bb8bf2f2-f791-41d4-9761-5a77700b8be2" />**Clone Hero Difficulty Creator**<img width="256" height="256" alt="Clone Hero Difficulty Creator Icon 2" src="https://github.com/user-attachments/assets/6cd62d8b-ed05-45f4-898a-3c533ac71643" />
 
 Clone Hero Difficulty Creator will automatically create missing difficulties from Expert only charts for your entire Clone Hero songs directory
 
