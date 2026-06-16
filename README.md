@@ -41,3 +41,6 @@ https://github.com/lililwavezlilil
 • **DOES NOT** overwrite any difficulty that already has already been charted
 
 • Creates a notes.chart.bak file in the same folder for each notes.chart file that receives a missing difficulty or difficulties
+
+<img width="3840" height="2160" alt="Screenshot (377)" src="https://github.com/user-attachments/assets/c2a8ec71-bbab-48b7-bdb8-5b203f1c56f1" />
+<img width="3840" height="2160" alt="Screenshot (378)" src="https://github.com/user-attachments/assets/16ab534d-f1f9-4543-b084-539361084599" />
