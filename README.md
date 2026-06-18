@@ -45,6 +45,7 @@ https://github.com/lililwavezlilil
 • Follows strict charting for Medium and Easy difficulties
 
 *(**NO** orange notes for Medium and Easy)*
+
 *(**NO** blue notes for Easy)*
 
 <img width="3840" height="2160" alt="Screenshot (377)" src="https://github.com/user-attachments/assets/c2a8ec71-bbab-48b7-bdb8-5b203f1c56f1" />
