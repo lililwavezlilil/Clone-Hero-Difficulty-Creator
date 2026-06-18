@@ -28,3 +28,6 @@ Features & Functionality:
 •Copies the Star Power exact position(s) as the Expert chart to the lower difficulties
 •DOES NOT overwrite any difficulty that already has already been charted
 •Creates a notes.chart.bak file in the same folder for each notes.chart file that receives a missing difficulty or difficulties
+•Follows strict/authentic charting for Medium and Easy difficulties:
+(NO orange notes for Medium and Easy)
+(NO blue notes for Easy)
