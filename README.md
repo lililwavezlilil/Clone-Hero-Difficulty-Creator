@@ -42,11 +42,11 @@ https://github.com/lililwavezlilil
 
 • Creates a notes.chart.bak file in the same folder for each notes.chart file that receives a missing difficulty or difficulties
 
-• Follows strict charting for Medium and Easy difficulties
+• Follows strict charting for Medium and Easy difficulties:
 
 ##### *(**NO** orange notes for Medium and Easy)*
-
 ##### *(**NO** blue notes for Easy)*
+
 <img width="3840" height="2160" alt="Screenshot (377)" src="https://github.com/user-attachments/assets/c2a8ec71-bbab-48b7-bdb8-5b203f1c56f1" />
 <img width="3840" height="2160" alt="Screenshot (378)" src="https://github.com/user-attachments/assets/16ab534d-f1f9-4543-b084-539361084599" />
 <div align="center"><picture><img alt="Clone Hero Difficulty Creator Icon 2" src="https://github.com/user-attachments/assets/96b6c8c1-eda7-45e2-926b-6476588f8b51" width="256" height="256"><picture><div>
