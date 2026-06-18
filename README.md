@@ -42,7 +42,7 @@ https://github.com/lililwavezlilil
 
 • Creates a notes.chart.bak file in the same folder for each notes.chart file that receives a missing difficulty or difficulties
 
-• Follows strict charting for Medium and Easy difficulties:
+• Follows strict/authentic charting for Medium and Easy difficulties:
 
 ##### *(**NO** orange notes for Medium and Easy)*
 
