@@ -36,11 +36,15 @@ https://github.com/lililwavezlilil
 
 • Uses the Expert chart to accurately chart the lower difficulties with proper spacing and note placement while retaining accurate note types *(Normal, Taps, HOPOS, Forced, etc.)*
 
-• Copies the Star Power exact position(s) as the Expert chart to the lower difficulties
+• Copies the Star Power exact position(s) from the Expert chart to the lower difficulties
 
-• **DOES NOT** overwrite any difficulty that already has already been charted
+• **DOES NOT** overwrite any difficulty that has already been charted
 
 • Creates a notes.chart.bak file in the same folder for each notes.chart file that receives a missing difficulty or difficulties
+
+• Follows strict charting for Medium and Easy difficulties
+*(**NO** orange notes for Medium and Easy)*
+*(**NO** blue notes for Easy)*
 
 <img width="3840" height="2160" alt="Screenshot (377)" src="https://github.com/user-attachments/assets/c2a8ec71-bbab-48b7-bdb8-5b203f1c56f1" />
 <img width="3840" height="2160" alt="Screenshot (378)" src="https://github.com/user-attachments/assets/16ab534d-f1f9-4543-b084-539361084599" />
