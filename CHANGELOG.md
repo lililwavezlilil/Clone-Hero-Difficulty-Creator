@@ -1,5 +1,7 @@
 ### **FULL CHANGELOG:**
 
+### ***v1.1 UPDATE COMING SOON!***
+
 ### ***v1.0.1***
 *• Fixed terminal window tab from displaying the programs path instead of the application name*
 
