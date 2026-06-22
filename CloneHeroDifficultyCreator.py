@@ -16,46 +16,61 @@ class Colors:
     DARKGRAY = '\033[90m'
     RESET = '\033[0m'
 
-# --- PARAMETERS ---
-FORCE_REPLACE = True
-SCAN_ALL_EXPERT = False
-
-# --- BEGIN CLONE HERO DIRECTORY SETUP ---
 CONFIG_FILE = "CH_Settings.txt"
-songs_directory = None
 
-# 1. Try to read the directory from the config file if it exists
-if os.path.exists(CONFIG_FILE):
-    with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-        for line in f:
-            if line.strip() and not line.startswith('#'):
-                songs_directory = line.strip()
-                break
+# ==========================================
+# --- DOWNCHARTING RULES & SETTINGS ---
+# ==========================================
 
-# 2. Check if the directory we found actually exists
-is_valid_dir = False
-if songs_directory and os.path.isdir(songs_directory):
-    is_valid_dir = True
-    print(f"{Colors.CYAN}Loaded Songs directory from CH_Settings.txt:{Colors.RESET}")
-    print(f"{Colors.DARKGRAY}{songs_directory}\n{Colors.RESET}")
+# --- COLOR RULES ---
+# True = Moves Orange notes to Blue. False = Removes Orange notes completely.
+MEDIUM_MOVE_ORANGE = True 
+# True = Moves Blue/Orange notes to Yellow. False = Removes them completely.
+EASY_MOVE_BLUE_ORANGE = True 
 
-# 3. If missing or invalid, prompt the user with a GUI
-if not is_valid_dir:
+# --- RHYTHM SPACING RULES ---
+# Controls the minimum distance allowed between notes. 
+# 2.0 = Allows fast 8th notes. 1.0 = Limits to slower Quarter notes.
+# Tweak these decimals to dial in the perfect density for your charts.
+MEDIUM_SPACING_DIVISOR = 1.5  
+EASY_SPACING_DIVISOR = 1.0    
+
+# --- CHORD RULES ---
+# Maximum notes allowed to be played at the exact same time.
+MEDIUM_MAX_CHORDS = 2
+EASY_MAX_CHORDS = 1
+
+# ==========================================
+
+def setup_directory():
+    songs_directory = None
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip() and not line.startswith('#'):
+                    songs_directory = line.strip()
+                    break
+
+    is_valid_dir = songs_directory and os.path.isdir(songs_directory)
+
+    if is_valid_dir:
+        print(f"{Colors.CYAN}Loaded Songs directory from CH_Settings.txt:{Colors.RESET}")
+        print(f"{Colors.DARKGRAY}{songs_directory}\n{Colors.RESET}")
+        return songs_directory
+
     print(f"{Colors.CYAN}First time setup: Please select your Clone Hero 'songs' folder from the popup window...{Colors.RESET}")
     
-    # Hide the root tkinter window
     root = tk.Tk()
     root.withdraw()
-    
-    # Open folder picker
+    root.attributes('-topmost', True)
     songs_directory = filedialog.askdirectory(title="Select your Clone Hero 'songs' folder")
+    root.destroy()
     
     if not songs_directory:
         print(f"\n{Colors.RED}Folder selection cancelled. Exiting.{Colors.RESET}")
         input("Press Enter to exit")
         sys.exit()
 
-    # 4. Generate the config file for Notepad editing later
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         f.write("# Clone Hero Batch-EasyChart Configuration\n")
         f.write("# You can safely edit the path below using Notepad.\n")
@@ -63,49 +78,9 @@ if not is_valid_dir:
         f.write(f"{songs_directory}\n")
     
     print(f"\n{Colors.GREEN}Saved! You can change this path anytime by editing {CONFIG_FILE} in Notepad.\n{Colors.RESET}")
-
-# --- END CLONE HERO DIRECTORY SETUP ---
-
-if not os.path.isdir(songs_directory):
-    print(f"{Colors.RED}ERROR: Cannot find your Songs folder at {songs_directory}{Colors.RESET}")
-    input("Press Enter to exit")
-    sys.exit()
-
-print("Clone Hero Difficulty Creator v1.0.1 initialized...\n")
-print(f"{Colors.CYAN}Scanning charts in {songs_directory}...{Colors.RESET}")
-
-target_folders = []
-
-# 1. SCAN AND FILTER
-for root_dir, _, files in os.walk(songs_directory):
-    for file in files:
-        if file.endswith('.chart'):
-            full_path = os.path.join(root_dir, file)
-            
-            # Read content, ignoring potential weird encodings, treating as UTF-8
-            with open(full_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
-                content = f.read()
-            
-            has_expert = re.search(r'\[Expert[A-Za-z]*\]', content)
-            has_lower = re.search(r'\[(Hard|Medium|Easy)[A-Za-z]*\]', content)
-            
-            if has_expert:
-                if SCAN_ALL_EXPERT or not has_lower:
-                    target_folders.append({
-                        'SongName': os.path.basename(root_dir),
-                        'ChartFile': full_path
-                    })
-
-if not target_folders:
-    print(f"{Colors.YELLOW}No matching charts found!{Colors.RESET}")
-    input("Press Enter to exit")
-    sys.exit()
-
-# 2. GUI SELECTOR
-print(f"{Colors.GREEN}Found {len(target_folders)} matching charts.{Colors.RESET}")
+    return songs_directory
 
 def gui_select_charts(charts):
-    """Replicates PowerShell's Out-GridView using Tkinter."""
     selected = []
     
     root = tk.Tk()
@@ -120,7 +95,7 @@ def gui_select_charts(charts):
     
     for idx, chart in enumerate(charts):
         listbox.insert(tk.END, f"{chart['SongName']}  |  {chart['ChartFile']}")
-        listbox.selection_set(idx) # Pre-select everything
+        listbox.selection_set(idx)
         
     def on_confirm():
         for i in listbox.curselection():
@@ -133,131 +108,217 @@ def gui_select_charts(charts):
     root.mainloop()
     return selected
 
-selected = gui_select_charts(target_folders)
-
-if not selected:
-    print(f"{Colors.YELLOW}No charts selected. Exiting.{Colors.RESET}")
-    input("Press Enter to exit")
-    sys.exit()
-
-# 3. CORE LOGIC FUNCTION
 def get_downcharted_notes(notes_data, difficulty, resolution):
     lines = notes_data.split('\n')
     new_lines = []
     
     last_accepted_tick = -99999
-    accepted_ticks = {} # Dict storing tick -> list of colors
+    accepted_ticks = {} 
     
     for line in lines:
         stripped_line = line.strip('\r ')
         
-        # Match note line: "  Tick = N Color Length"
         match = re.match(r'^\s*(\d+)\s*=\s*N\s+(\d+)\s+(\d+)', stripped_line)
         if match:
             tick = int(match.group(1))
             color = int(match.group(2))
             length = int(match.group(3))
             
-            # Strip HOPO/Strum forces (5 and 6) on lower difficulties
+            # --- MODIFIER HANDLING (HOPOs and Taps) ---
             if color in (5, 6):
-                if difficulty == "Hard":
+                if tick in accepted_ticks:
                     new_lines.append(f"  {tick} = N {color} {length}")
                 continue
                 
-            # Normal Frets (0-4) and Open Notes (7)
+            # --- BASE NOTE HANDLING (Green through Orange, plus Open Notes) ---
             if color <= 4 or color == 7:
-                
-                # COLOR DOWN-MAPPING
+                # Orange Handling for Medium
                 if difficulty == "Medium" and color == 4:
-                    color = 3
+                    if MEDIUM_MOVE_ORANGE:
+                        color = 3
+                    else:
+                        continue 
+                        
+                # Blue/Orange Handling for Easy
                 if difficulty == "Easy" and color >= 3 and color != 7:
-                    color = 2
+                    if EASY_MOVE_BLUE_ORANGE:
+                        color = 2
+                    else:
+                        continue 
                     
-                # TICK DISTANCE (THINNING OUT FAST SECTIONS)
                 if tick not in accepted_ticks:
                     distance = tick - last_accepted_tick
                     skip_tick = False
                     
-                    # Easy: Max speed is Quarter Notes (1x Resolution)
-                    if difficulty == "Easy" and distance < resolution:
+                    if difficulty == "Easy" and distance < (resolution / EASY_SPACING_DIVISOR):
                         skip_tick = True
-                    # Medium: Max speed is 8th Notes (0.5x Resolution)
-                    if difficulty == "Medium" and distance < (resolution / 2):
+                    if difficulty == "Medium" and distance < (resolution / MEDIUM_SPACING_DIVISOR):
                         skip_tick = True
                         
                     if skip_tick:
-                        continue # Drop note because it's too fast
+                        continue 
                     else:
                         accepted_ticks[tick] = []
                         last_accepted_tick = tick
                         
-                # If tick wasn't accepted, drop the note
                 if tick not in accepted_ticks:
                     continue
                     
-                # CHORD LIMITS
                 if color in accepted_ticks[tick]:
-                    continue # Prevent duplicate colors
-                if difficulty == "Easy" and len(accepted_ticks[tick]) >= 1:
-                    continue # Single notes only
-                if difficulty == "Medium" and len(accepted_ticks[tick]) >= 2:
-                    continue # Max 2-note chords
+                    continue 
+                if difficulty == "Easy" and len(accepted_ticks[tick]) >= EASY_MAX_CHORDS:
+                    continue 
+                if difficulty == "Medium" and len(accepted_ticks[tick]) >= MEDIUM_MAX_CHORDS:
+                    continue 
                     
                 accepted_ticks[tick].append(color)
                 new_lines.append(f"  {tick} = N {color} {length}")
             else:
-                # Keep odd note types intact just in case
                 new_lines.append(f"  {tick} = N {color} {length}")
         else:
-            # Keep Star Power, Events, and curly braces intact
             if stripped_line != "":
                 new_lines.append(stripped_line)
                 
     return '\n'.join(new_lines)
 
+def run():
+    print("Clone Hero Difficulty Creator v1.1 initialized...\n")
+    
+    songs_directory = setup_directory()
+    if not songs_directory:
+        sys.exit()
+        
+    if not os.path.isdir(songs_directory):
+        print(f"{Colors.RED}ERROR: Cannot find your Songs folder at {songs_directory}{Colors.RESET}")
+        input("Press Enter to exit")
+        sys.exit()
 
-# 4. EXECUTE FILE OVERWRITES
-for item in selected:
-    print(f"{Colors.CYAN}Rewriting: {item['SongName']}...{Colors.RESET}")
-    
-    with open(item['ChartFile'], 'r', encoding='utf-8-sig', errors='ignore') as f:
-        content = f.read()
-        
-    # Grab song resolution for math (Defaults to 192 if not found)
-    resolution = 192
-    res_match = re.search(r'(?m)^\s*Resolution\s*=\s*(\d+)', content)
-    if res_match:
-        resolution = int(res_match.group(1))
-        
-    # Strip existing Hard/Medium/Easy blocks if ForceReplace is True
-    if FORCE_REPLACE:
-        content = re.sub(r'(?m)^\[(Hard|Medium|Easy)[A-Za-z]+\]\r?\n\{\r?\n[\s\S]*?\r?\n\}\r?\n?', '', content)
-        
-    # Find all Expert blocks (Single, DoubleBass, Keys, etc.)
-    expert_blocks = re.finditer(r'(?m)^\[Expert([A-Za-z]+)\]\r?\n\{\r?\n([\s\S]*?)\r?\n\}', content)
-    
-    new_blocks = ""
-    
-    for match in expert_blocks:
-        instrument = match.group(1)
-        notes_data = match.group(2)
-        
-        hard_notes = get_downcharted_notes(notes_data, "Hard", resolution)
-        medium_notes = get_downcharted_notes(notes_data, "Medium", resolution)
-        easy_notes = get_downcharted_notes(notes_data, "Easy", resolution)
-        
-        new_blocks += f"\n[Hard{instrument}]\n{{\n{hard_notes}\n}}"
-        new_blocks += f"\n[Medium{instrument}]\n{{\n{medium_notes}\n}}"
-        new_blocks += f"\n[Easy{instrument}]\n{{\n{easy_notes}\n}}"
-        
-    # Append the newly generated difficulties to the file
-    final_content = content.rstrip() + "\n" + new_blocks + "\n"
-    
-    # Write back as UTF-8 (without BOM, matching standard Clone Hero formatting)
-    with open(item['ChartFile'], 'w', encoding='utf-8') as f:
-        f.write(final_content)
-        
-    print(f"{Colors.GREEN}Success: {item['SongName']} fully downcharted!{Colors.RESET}")
+    print(f"{Colors.CYAN}Scanning charts in {songs_directory}...{Colors.RESET}")
 
-print(f"\n{Colors.MAGENTA}Batch process complete! You can delete EasyChartGenerator.exe.{Colors.RESET}")
-input("Press Enter to exit")
+    target_folders = []
+
+    for root_dir, _, files in os.walk(songs_directory):
+        for file in files:
+            if file.endswith('.chart'):
+                full_path = os.path.join(root_dir, file)
+                
+                with open(full_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+                    content = f.read()
+                
+                has_expert = re.findall(r'(?m)^\[Expert([A-Za-z]+)\]', content)
+                needs_downcharting = False
+                
+                if has_expert:
+                    for instr in has_expert:
+                        # Extract blocks
+                        h_match = re.search(r'(?m)^\[Hard' + instr + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+                        m_match = re.search(r'(?m)^\[Medium' + instr + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+                        e_match = re.search(r'(?m)^\[Easy' + instr + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+                        
+                        # Note checks
+                        h_has_notes = h_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', h_match.group(1), re.MULTILINE)
+                        m_has_notes = m_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', m_match.group(1), re.MULTILINE)
+                        m_has_forbidden = m_match and re.search(r'^\s*\d+\s*=\s*N\s+4\b', m_match.group(1), re.MULTILINE)
+                        e_has_notes = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', e_match.group(1), re.MULTILINE)
+                        e_has_forbidden = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[34]\b', e_match.group(1), re.MULTILINE)
+                        
+                        # Flag for processing if empty OR if illegal notes are found
+                        if not (h_has_notes and m_has_notes and e_has_notes) or m_has_forbidden or e_has_forbidden:
+                            needs_downcharting = True
+                            break
+                            
+                if needs_downcharting:
+                    target_folders.append({
+                        'SongName': os.path.basename(root_dir),
+                        'ChartFile': full_path
+                    })
+
+    if not target_folders:
+        print(f"{Colors.YELLOW}No charts found requiring lower difficulty generation or correction!{Colors.RESET}")
+        input("Press Enter to exit")
+        sys.exit()
+
+    print(f"{Colors.GREEN}Found {len(target_folders)} charts requiring downcharting or correction.{Colors.RESET}")
+    selected = gui_select_charts(target_folders)
+
+    if not selected:
+        print(f"{Colors.YELLOW}No charts selected. Cancelling process.{Colors.RESET}")
+        input("Press Enter to exit")
+        sys.exit()
+
+    for item in selected:
+        print(f"\n{Colors.CYAN}Evaluating: {item['SongName']}...{Colors.RESET}")
+        
+        with open(item['ChartFile'], 'r', encoding='utf-8-sig', errors='ignore') as f:
+            content = f.read()
+            
+        resolution = 192
+        res_match = re.search(r'(?m)^\s*Resolution\s*=\s*(\d+)', content)
+        if res_match:
+            resolution = int(res_match.group(1))
+            
+        expert_blocks = re.finditer(r'(?m)^\[Expert([A-Za-z]+)\][ \t]*\r?\n\{([^}]*)\}', content)
+        new_blocks = ""
+        
+        for match in expert_blocks:
+            instrument = match.group(1)
+            expert_notes = match.group(2)
+            
+            h_match = re.search(r'(?m)^\[Hard' + instrument + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+            m_match = re.search(r'(?m)^\[Medium' + instrument + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+            e_match = re.search(r'(?m)^\[Easy' + instrument + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+            
+            h_has_notes = h_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', h_match.group(1), re.MULTILINE)
+            m_has_notes = m_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', m_match.group(1), re.MULTILINE)
+            m_has_forbidden = m_match and re.search(r'^\s*\d+\s*=\s*N\s+4\b', m_match.group(1), re.MULTILINE)
+            e_has_notes = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', e_match.group(1), re.MULTILINE)
+            e_has_forbidden = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[34]\b', e_match.group(1), re.MULTILINE)
+
+            m_needs_rewrite = not m_has_notes or m_has_forbidden
+            e_needs_rewrite = not e_has_notes or e_has_forbidden
+
+            # --- HARD (Source: Expert) ---
+            if not h_has_notes:
+                print(f"  {Colors.DARKGRAY}[Hard{instrument}] -> Charting from Expert...{Colors.RESET}")
+                hard_notes = get_downcharted_notes(expert_notes, "Hard", resolution)
+                content = re.sub(r'(?m)^\[Hard' + instrument + r'\][ \t]*\r?\n\{[^}]*\}\r?\n?', '', content)
+                new_blocks += f"\n[Hard{instrument}]\n{{\n{hard_notes}\n}}"
+                source_for_medium = hard_notes
+            else:
+                print(f"  {Colors.YELLOW}[Hard{instrument}] -> Skipped (Valid Existing Chart){Colors.RESET}")
+                source_for_medium = h_match.group(1)
+                
+            # --- MEDIUM (Source: Hard) ---
+            if m_needs_rewrite:
+                reason = "0 notes found" if not m_has_notes else "Forbidden Orange notes detected"
+                print(f"  {Colors.DARKGRAY}[Medium{instrument}] -> Rewriting from Hard ({reason})...{Colors.RESET}")
+                medium_notes = get_downcharted_notes(source_for_medium, "Medium", resolution)
+                content = re.sub(r'(?m)^\[Medium' + instrument + r'\][ \t]*\r?\n\{[^}]*\}\r?\n?', '', content)
+                new_blocks += f"\n[Medium{instrument}]\n{{\n{medium_notes}\n}}"
+                source_for_easy = medium_notes
+            else:
+                print(f"  {Colors.YELLOW}[Medium{instrument}] -> Skipped (Valid Existing Chart){Colors.RESET}")
+                source_for_easy = m_match.group(1)
+                
+            # --- EASY (Source: Medium) ---
+            if e_needs_rewrite:
+                reason = "0 notes found" if not e_has_notes else "Forbidden Blue/Orange notes detected"
+                print(f"  {Colors.DARKGRAY}[Easy{instrument}] -> Rewriting from Medium ({reason})...{Colors.RESET}")
+                easy_notes = get_downcharted_notes(source_for_easy, "Easy", resolution)
+                content = re.sub(r'(?m)^\[Easy' + instrument + r'\][ \t]*\r?\n\{[^}]*\}\r?\n?', '', content)
+                new_blocks += f"\n[Easy{instrument}]\n{{\n{easy_notes}\n}}"
+            else:
+                print(f"  {Colors.YELLOW}[Easy{instrument}] -> Skipped (Valid Existing Chart){Colors.RESET}")
+            
+        final_content = content.rstrip() + "\n" + new_blocks + "\n"
+        
+        with open(item['ChartFile'], 'w', encoding='utf-8') as f:
+            f.write(final_content)
+            
+        print(f"{Colors.GREEN}Success: {item['SongName']} processed!{Colors.RESET}")
+
+    print(f"\n{Colors.MAGENTA}Batch process complete! You can close this window.{Colors.RESET}")
+    input("Press Enter to exit")
+
+if __name__ == "__main__":
+    run()
