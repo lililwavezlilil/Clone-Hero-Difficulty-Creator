@@ -2,9 +2,13 @@
 
 ### ***v1.2***
 *• Fixed Hard difficulties adjustable note spacing and placement control* ***(Default is 2.0)***
+
 *• Adjusted Medium difficulty note spacing and placement control* ***(Default is 1.5)***
+
 *• Adjusted Easy difficulty note spacing and placement control* ***(Default is 1.0)***
+
 *• Adjusted the charting to be more 'surgical' resulting in better charting*
+
 *• Added reinforcement logic for previous update adjustments* ***(v1.1)***
 
 ### ***v1.1***
