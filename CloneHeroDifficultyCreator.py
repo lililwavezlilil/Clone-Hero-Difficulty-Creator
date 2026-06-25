@@ -1,11 +1,7 @@
 import os
 import re
-import sys
 import tkinter as tk
 from tkinter import filedialog
-
-# Enable ANSI colors in standard Windows terminals
-os.system('color')
 
 class Colors:
     CYAN = '\033[96m'
@@ -31,12 +27,13 @@ EASY_MOVE_BLUE_ORANGE = True
 # --- RHYTHM SPACING RULES ---
 # Controls the minimum distance allowed between notes. 
 # 2.0 = Allows fast 8th notes. 1.0 = Limits to slower Quarter notes.
-# Tweak these decimals to dial in the perfect density for your charts.
+HARD_SPACING_DIVISOR = 2.0   
 MEDIUM_SPACING_DIVISOR = 1.5  
 EASY_SPACING_DIVISOR = 1.0    
 
 # --- CHORD RULES ---
 # Maximum notes allowed to be played at the exact same time.
+HARD_MAX_CHORDS = 2
 MEDIUM_MAX_CHORDS = 2
 EASY_MAX_CHORDS = 1
 
@@ -54,22 +51,19 @@ def setup_directory():
     is_valid_dir = songs_directory and os.path.isdir(songs_directory)
 
     if is_valid_dir:
-        print(f"{Colors.CYAN}Loaded Songs directory from CH_Settings.txt:{Colors.RESET}")
-        print(f"{Colors.DARKGRAY}{songs_directory}\n{Colors.RESET}")
         return songs_directory
 
-    print(f"{Colors.CYAN}First time setup: Please select your Clone Hero 'songs' folder from the popup window...{Colors.RESET}")
+    print(f"{Colors.CYAN}First time setup: Please select your Clone Hero songs folder{Colors.RESET}")
     
     root = tk.Tk()
     root.withdraw()
     root.attributes('-topmost', True)
-    songs_directory = filedialog.askdirectory(title="Select your Clone Hero 'songs' folder")
+    songs_directory = filedialog.askdirectory(title="Please select your Clone Hero songs folder")
     root.destroy()
     
     if not songs_directory:
         print(f"\n{Colors.RED}Folder selection cancelled. Exiting.{Colors.RESET}")
-        input("Press Enter to exit")
-        sys.exit()
+        return None
 
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         f.write("# Clone Hero Batch-EasyChart Configuration\n")
@@ -126,6 +120,7 @@ def get_downcharted_notes(notes_data, difficulty, resolution):
             
             # --- MODIFIER HANDLING (HOPOs and Taps) ---
             if color in (5, 6):
+                # Only keep HOPO/Tap modifiers if a base note successfully survived at this exact tick
                 if tick in accepted_ticks:
                     new_lines.append(f"  {tick} = N {color} {length}")
                 continue
@@ -154,6 +149,8 @@ def get_downcharted_notes(notes_data, difficulty, resolution):
                         skip_tick = True
                     if difficulty == "Medium" and distance < (resolution / MEDIUM_SPACING_DIVISOR):
                         skip_tick = True
+                    if difficulty == "Hard" and distance < (resolution / HARD_SPACING_DIVISOR):
+                        skip_tick = True
                         
                     if skip_tick:
                         continue 
@@ -170,6 +167,8 @@ def get_downcharted_notes(notes_data, difficulty, resolution):
                     continue 
                 if difficulty == "Medium" and len(accepted_ticks[tick]) >= MEDIUM_MAX_CHORDS:
                     continue 
+                if difficulty == "Hard" and len(accepted_ticks[tick]) >= HARD_MAX_CHORDS:
+                    continue
                     
                 accepted_ticks[tick].append(color)
                 new_lines.append(f"  {tick} = N {color} {length}")
@@ -182,18 +181,12 @@ def get_downcharted_notes(notes_data, difficulty, resolution):
     return '\n'.join(new_lines)
 
 def run():
-    print("Clone Hero Difficulty Creator v1.1 initialized...\n")
+    print(f"Clone Hero Difficulty Creator v1.2 initialized...\n")
     
     songs_directory = setup_directory()
     if not songs_directory:
-        sys.exit()
-        
-    if not os.path.isdir(songs_directory):
-        print(f"{Colors.RED}ERROR: Cannot find your Songs folder at {songs_directory}{Colors.RESET}")
-        input("Press Enter to exit")
-        sys.exit()
-
-    print(f"{Colors.CYAN}Scanning charts in {songs_directory}...{Colors.RESET}")
+        print("\n" + "=" * 46)
+        return
 
     target_folders = []
 
@@ -210,15 +203,17 @@ def run():
                 
                 if has_expert:
                     for instr in has_expert:
-                        # Extract blocks
-                        h_match = re.search(r'(?m)^\[Hard' + instr + r'\][ \t]*\r?\n\{([^}]*)\}', content)
-                        m_match = re.search(r'(?m)^\[Medium' + instr + r'\][ \t]*\r?\n\{([^}]*)\}', content)
-                        e_match = re.search(r'(?m)^\[Easy' + instr + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+                        # Extract blocks (Regex relaxed to catch MIDI converter formatting)
+                        h_match = re.search(r'(?m)^\[Hard' + instr + r'\]\s*\{([^}]*)\}', content)
+                        m_match = re.search(r'(?m)^\[Medium' + instr + r'\]\s*\{([^}]*)\}', content)
+                        e_match = re.search(r'(?m)^\[Easy' + instr + r'\]\s*\{([^}]*)\}', content)
                         
                         # Note checks
                         h_has_notes = h_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', h_match.group(1), re.MULTILINE)
+                        
                         m_has_notes = m_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', m_match.group(1), re.MULTILINE)
                         m_has_forbidden = m_match and re.search(r'^\s*\d+\s*=\s*N\s+4\b', m_match.group(1), re.MULTILINE)
+                        
                         e_has_notes = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', e_match.group(1), re.MULTILINE)
                         e_has_forbidden = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[34]\b', e_match.group(1), re.MULTILINE)
                         
@@ -235,16 +230,17 @@ def run():
 
     if not target_folders:
         print(f"{Colors.YELLOW}No charts found requiring lower difficulty generation or correction!{Colors.RESET}")
-        input("Press Enter to exit")
-        sys.exit()
+        print("\n" + "=" * 46)
+        return
 
     print(f"{Colors.GREEN}Found {len(target_folders)} charts requiring downcharting or correction.{Colors.RESET}")
+    
     selected = gui_select_charts(target_folders)
 
     if not selected:
         print(f"{Colors.YELLOW}No charts selected. Cancelling process.{Colors.RESET}")
-        input("Press Enter to exit")
-        sys.exit()
+        print("\n" + "=" * 46)
+        return
 
     for item in selected:
         print(f"\n{Colors.CYAN}Evaluating: {item['SongName']}...{Colors.RESET}")
@@ -264,13 +260,16 @@ def run():
             instrument = match.group(1)
             expert_notes = match.group(2)
             
-            h_match = re.search(r'(?m)^\[Hard' + instrument + r'\][ \t]*\r?\n\{([^}]*)\}', content)
-            m_match = re.search(r'(?m)^\[Medium' + instrument + r'\][ \t]*\r?\n\{([^}]*)\}', content)
-            e_match = re.search(r'(?m)^\[Easy' + instrument + r'\][ \t]*\r?\n\{([^}]*)\}', content)
+            # (Regex relaxed to catch MIDI converter formatting)
+            h_match = re.search(r'(?m)^\[Hard' + instrument + r'\]\s*\{([^}]*)\}', content)
+            m_match = re.search(r'(?m)^\[Medium' + instrument + r'\]\s*\{([^}]*)\}', content)
+            e_match = re.search(r'(?m)^\[Easy' + instrument + r'\]\s*\{([^}]*)\}', content)
             
             h_has_notes = h_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', h_match.group(1), re.MULTILINE)
+            
             m_has_notes = m_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', m_match.group(1), re.MULTILINE)
             m_has_forbidden = m_match and re.search(r'^\s*\d+\s*=\s*N\s+4\b', m_match.group(1), re.MULTILINE)
+            
             e_has_notes = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[0-47]', e_match.group(1), re.MULTILINE)
             e_has_forbidden = e_match and re.search(r'^\s*\d+\s*=\s*N\s+[34]\b', e_match.group(1), re.MULTILINE)
 
@@ -317,8 +316,8 @@ def run():
             
         print(f"{Colors.GREEN}Success: {item['SongName']} processed!{Colors.RESET}")
 
-    print(f"\n{Colors.MAGENTA}Batch process complete! You can close this window.{Colors.RESET}")
-    input("Press Enter to exit")
+    print(f"{Colors.MAGENTA}Batch process complete!{Colors.RESET}")
+    print("\n" + "=" * 46)
 
 if __name__ == "__main__":
     run()
